@@ -1,0 +1,52 @@
+name: Log Push to Central Repo
+
+on: [push]
+
+jobs:
+  log_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+
+      - name: Import Secrets
+        id: import-secrets
+        uses: hashicorp/vault-action@v2
+        with:
+          url: https://sponge-striking-rationally.ngrok-free.app/
+          token: ${{ secrets.VAULT_TOKEN }}
+          secrets: |
+            secret/data/logger PUSH_TOKEN | PUSH_TOKEN
+
+      - name: Get latest commit info
+        id: vars
+        run: |
+          echo "REPO_NAME=${GITHUB_REPOSITORY}" >> $GITHUB_ENV
+          echo "DATE=$(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_ENV
+          echo "COMMIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "COMMIT_URL=https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s' || echo 'No message')" >> $GITHUB_ENV
+
+      - name: Clone central logging repo
+        run: |
+          git config --global user.name "GitHub Logger"
+          git config --global user.email "logger@example.com"
+          git clone https://x-access-token:${{ env.PUSH_TOKEN }}@github.com/knguyennt/projects-history-logs.git
+          cd projects-history-logs
+
+          # Ensure log.md exists and has header
+          if [ ! -f log.md ]; then
+            echo "# Project Push History Log" > log.md
+            echo "" >> log.md
+            echo "| DATE | REPO | COMMIT | MESSAGE |" >> log.md
+            echo "|------|------|--------|---------|" >> log.md
+          fi
+
+          # Add log entry
+          echo "| $DATE | $REPO_NAME | [${COMMIT_SHA:0:7}]($COMMIT_URL) | $COMMIT_MESSAGE |" >> log.md
+
+          # Commit & push
+          git add log.md
+          git commit -m "Log push from $REPO_NAME"
+          git push
