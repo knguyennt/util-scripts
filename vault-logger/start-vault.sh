@@ -7,7 +7,7 @@ else
 fi
 
 
-docker run --rm -p $PORT:$PORT --cap-add=IPC_LOCK -d --name $CONTAINER_NAME -e "VAULT_DEV_ROOT_TOKEN_ID=$VAULT_TOKEN" -e "VAULT_DEV_LISTEN_ADDRESS=$HOST:$PORT" -e VAULT_ADDR='http://127.0.0.1:8200' $IMAGE_NAME
+docker run -p $PORT:$PORT --cap-add=IPC_LOCK -d --name $CONTAINER_NAME -e "VAULT_DEV_ROOT_TOKEN_ID=$VAULT_TOKEN" -e "VAULT_DEV_LISTEN_ADDRESS=$HOST:$PORT" -e VAULT_ADDR='http://127.0.0.1:8200' $IMAGE_NAME
 sleep 5
 docker exec $CONTAINER_NAME vault login $VAULT_TOKEN
 docker exec $CONTAINER_NAME vault kv put secret/logger ${TOKEN_SECRET_NAME}=${TOKEN_SECRET_VALUE}
